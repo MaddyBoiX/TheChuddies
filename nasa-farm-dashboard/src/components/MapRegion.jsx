@@ -16,7 +16,7 @@ export default function MapRegion({ lat, lon }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markerRef = useRef(null);
-  const circleRef = useRef(null);
+  const rectangleRef = useRef(null);
   const initialCenterRef = useRef([lat, lon]);
   const initialAreaRef = useRef(areaAcres);
 
@@ -32,13 +32,15 @@ export default function MapRegion({ lat, lon }) {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(mapInstanceRef.current);
 
-      // Initial marker and highlighted region circle
+      // Initial marker and square highlighted region
       markerRef.current = L.marker([initialLat, initialLon]).addTo(mapInstanceRef.current);
-      circleRef.current = L.circle([initialLat, initialLon], {
+      const bounds = L.latLng(initialLat, initialLon).toBounds(
+        Math.sqrt(initialAreaAcres * 4046.8564224)
+      );
+      rectangleRef.current = L.rectangle(bounds, {
         color: '#0d6efd',
         fillColor: '#0d6efd',
         fillOpacity: 0.2,
-        radius: Math.sqrt((initialAreaAcres * 4046.8564224) / Math.PI)
       }).addTo(mapInstanceRef.current);
     }
 
@@ -51,11 +53,13 @@ export default function MapRegion({ lat, lon }) {
     };
   }, []);
 
-  // Update map view, marker, and highlighted circle when lat, lon, or slider scale changes
+  // Update map view, marker, and square highlight when coordinates or area change
   useEffect(() => {
     if (mapInstanceRef.current) {
       const newLatLng = [lat, lon];
-      const radiusMeters = Math.sqrt((areaAcres * 4046.8564224) / Math.PI);
+      const bounds = L.latLng(lat, lon).toBounds(
+        Math.sqrt(areaAcres * 4046.8564224)
+      );
 
       mapInstanceRef.current.setView(newLatLng);
 
@@ -63,9 +67,8 @@ export default function MapRegion({ lat, lon }) {
         markerRef.current.setLatLng(newLatLng);
       }
 
-      if (circleRef.current) {
-        circleRef.current.setLatLng(newLatLng);
-        circleRef.current.setRadius(radiusMeters);
+      if (rectangleRef.current) {
+        rectangleRef.current.setBounds(bounds);
       }
     }
   }, [lat, lon, areaAcres]);
